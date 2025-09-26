@@ -74,7 +74,7 @@ async function sendCommand(command) {
   try {
     const encoder = new TextEncoder();
     await txCharacteristic.writeValue(encoder.encode(command));
-    alert("📤 Sent: " + command);
+    console.log("📤 Sent:", command);
   } catch (err) {
     alert("⚠ Failed to send: " + err);
   }
@@ -84,6 +84,7 @@ async function sendCommand(command) {
 document.getElementById('recordBtn').addEventListener('click', () => {
   document.getElementById('recordSection').classList.remove('hidden');
   document.getElementById('typeSection').classList.add('hidden');
+  if(speechRecognition) speechRecognition.start();
 });
 
 document.getElementById('typeBtn').addEventListener('click', () => {
@@ -96,15 +97,16 @@ document.getElementById('sendTextBtn').addEventListener('click', () => {
   if(cmd) sendCommand(cmd);
 });
 
-// Optional: basic speech recognition
+// Speech Recognition
+let speechRecognition;
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(SpeechRecognition){
-  const recognition = new SpeechRecognition();
-  recognition.continuous = false;
-  recognition.interimResults = true;
-  recognition.lang = 'en-US';
+  speechRecognition = new SpeechRecognition();
+  speechRecognition.continuous = false;
+  speechRecognition.interimResults = false;
+  speechRecognition.lang = 'en-US';
 
-  recognition.onresult = (event) => {
+  speechRecognition.onresult = (event) => {
     const transcript = Array.from(event.results).map(r=>r[0].transcript).join('');
     document.getElementById('voiceText').textContent = transcript;
     document.getElementById('voiceResult').classList.remove('hidden');
@@ -115,7 +117,6 @@ if(SpeechRecognition){
     if(cmd) sendCommand(cmd);
   });
 
-  document.getElementById('recordBtn').addEventListener('click', () => recognition.start());
 } else {
   document.getElementById('recordBtn').disabled = true;
   document.getElementById('recordBtn').textContent = 'Voice Not Supported';
