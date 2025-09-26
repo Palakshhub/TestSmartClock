@@ -2,204 +2,125 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Clock Controller</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2300AAFF' d='M12 18c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0-5c3.314 0 6 2.686 6 6h-2c0-2.209-1.791-4-4-4s-4 1.791-4 4H6c0-3.314 2.686-6 6-6zm0-5c5.523 0 10 4.477 10 10h-2c0-4.418-3.582-8-8-8s-8 3.582-8 8H2c0-5.523 4.477-10 10-10z'/%3E%3C/svg%3E" />
-
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2300AAFF' d='M12 18c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0-5c3.314 0 6 2.686 6 6h-2c0-2.209-1.791-4-4-4s-4 1.791-4 4H6c0-3.314 2.686-6 6-6zm0-5c5.523 0 10 4.477 10 10h-2c0-4.418-3.582-8-8-8s-8 3.582-8 8H2c0-5.523 4.477-10 10-10z'/%3E%3C/svg%3E" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-    html, body {
-      height: 100%;
-      width: 100%;
-      overflow-x: hidden;
-      font-family: 'Inter', sans-serif;
-    }
-
-    body {
-      --bg: radial-gradient(#000 5%, #0000 6%);
-      --size: 3rem;
-      width: 100%;
-      height: 100%;
-      background-image: radial-gradient(#000 5%, #0000 6%), radial-gradient(#000 5%, #0000 6%);
-      background-position: 0 0, calc(var(--size) / 2) calc(var(--size) / 2);
-      background-size: var(--size) var(--size);
-    }
-
-    .card {
-      background-color: rgba(255, 255, 255, 0.98);
-      border-radius: 0.75rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-
-    .pulse-animation { animation: pulse 1.5s infinite; }
-    @keyframes pulse {
-      0% { opacity: 0.8; }
-      50% { opacity: 0.2; }
-      100% { opacity: 0.8; }
-    }
+    body { font-family: 'Inter', sans-serif; padding: 1rem; }
+    .card { background-color: rgba(255,255,255,0.98); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .btn { padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-weight: 500; }
+    .btn-primary { background-color: #4f46e5; color: white; }
+    .btn-secondary { background-color: #e5e7eb; color: #111827; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
-  <!-- Header -->
-  <header class="px-3 sm:px-4 py-6 w-full text-center">
-    <h1 class="text-3xl font-bold text-gray-800 mb-1">Smart Clock Controller</h1>
-    <p class="text-gray-600 text-sm">Control your smart clock with voice or text commands</p>
-  </header>
+  <h1 class="text-2xl font-bold mb-2">Smart Clock Controller</h1>
+  <p class="mb-4">Send commands to your ESP32 Smart Display via Bluetooth.</p>
 
-  <!-- Main -->
-  <main class="flex-grow w-full px-3 pb-4">
-    <div class="card p-4 mb-4 mx-auto max-w-md">
-      <h2 class="text-lg font-semibold text-gray-800 mb-2">How It Works</h2>
-      <p class="text-sm text-gray-600">
-        This webpage lets you control the Smart Clock by sending commands through speech or text. 
-        Your messages will be sent to the ESP32 via Bluetooth.
-      </p>
+  <div class="card">
+    <button id="connectBtn" class="btn btn-primary w-full mb-2">Connect to ESP32</button>
+    <p id="status" class="text-sm">Status: Not connected</p>
+  </div>
+
+  <div class="card">
+    <h2 class="font-semibold mb-2">Type Command</h2>
+    <textarea id="typeInput" rows="3" class="w-full border rounded p-2 mb-2" placeholder="e.g., show time"></textarea>
+    <button id="sendTextBtn" class="btn btn-primary w-full">Send Command</button>
+  </div>
+
+  <div class="card">
+    <h2 class="font-semibold mb-2">Voice Command</h2>
+    <button id="recordBtn" class="btn btn-secondary w-full mb-2">🎙 Record</button>
+    <div id="voiceResult" class="hidden">
+      <p id="voiceText" class="mb-2 text-gray-700"></p>
+      <button id="sendVoiceBtn" class="btn btn-primary w-full">Send Voice Command</button>
     </div>
+  </div>
 
-    <!-- Buttons -->
-    <div class="flex flex-col gap-3 w-full mb-4 mx-auto max-w-md">
-      <button id="recordBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-medium">
-        🎙 Record
-      </button>
-      <button id="typeBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-medium">
-        ⌨ Type
-      </button>
-    </div>
+<script>
+let bluetoothDevice;
+let gattServer;
+let clockService;
+let txCharacteristic;
+const SERVICE_UUID = "12345678-1234-5678-1234-56789abcdef0";
+const CHAR_UUID = "abcdef01-1234-5678-1234-56789abcdef0";
 
-    <!-- Record Section -->
-    <div id="recordSection" class="hidden w-full mb-4 mx-auto max-w-md">
-      <div id="recordingIndicator" class="hidden mb-3 text-center">
-        <div class="inline-flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 rounded-full text-sm">
-          <div class="w-2 h-2 rounded-full bg-red-500 pulse-animation"></div>
-          <span class="font-medium">Recording...</span>
-        </div>
-      </div>
+const status = document.getElementById('status');
+const connectBtn = document.getElementById('connectBtn');
+const typeInput = document.getElementById('typeInput');
+const sendTextBtn = document.getElementById('sendTextBtn');
+const recordBtn = document.getElementById('recordBtn');
+const voiceResult = document.getElementById('voiceResult');
+const voiceText = document.getElementById('voiceText');
+const sendVoiceBtn = document.getElementById('sendVoiceBtn');
 
-      <div id="voiceResult" class="card hidden border border-gray-200 p-3">
-        <div id="voiceText" class="text-gray-700 mb-3 text-sm"></div>
-        <button id="sendVoiceBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-medium">
-          Send to ESP32
-        </button>
-      </div>
-    </div>
-
-    <!-- Type Section -->
-    <div id="typeSection" class="hidden w-full mb-4 mx-auto max-w-md">
-      <div class="card border border-gray-200 p-3">
-        <textarea id="typeInput" class="w-full border rounded-lg p-2 mb-3 resize-none text-sm" rows="3" placeholder="Type your command here..."></textarea>
-        <button id="sendTextBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-medium">
-          Send to ESP32
-        </button>
-      </div>
-    </div>
-  </main>
-
-  <!-- Script -->
-  <script>
-    const recordBtn = document.getElementById('recordBtn');
-    const typeBtn = document.getElementById('typeBtn');
-    const recordSection = document.getElementById('recordSection');
-    const typeSection = document.getElementById('typeSection');
-    const recordingIndicator = document.getElementById('recordingIndicator');
-    const voiceResult = document.getElementById('voiceResult');
-    const voiceText = document.getElementById('voiceText');
-    const sendVoiceBtn = document.getElementById('sendVoiceBtn');
-    const typeInput = document.getElementById('typeInput');
-    const sendTextBtn = document.getElementById('sendTextBtn');
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition, isRecording = false;
-
-    // Bluetooth setup
-    let bluetoothDevice;
-    let gattServer;
-    let clockService;
-    let txCharacteristic;  // write characteristic
-
-    async function connectToESP32() {
-      try {
-        bluetoothDevice = await navigator.bluetooth.requestDevice({
-          filters: [{ namePrefix: "SmartClock" }], // ESP32 advertised name
-          optionalServices: ["12345678-1234-5678-1234-56789abcdef0"] // replace with your ESP32 service UUID
-        });
-
-        gattServer = await bluetoothDevice.gatt.connect();
-        clockService = await gattServer.getPrimaryService("12345678-1234-5678-1234-56789abcdef0");
-        txCharacteristic = await clockService.getCharacteristic("abcdef01-1234-5678-1234-56789abcdef0"); // replace with TX UUID
-        alert("✅ Smart Clock connected!");
-      } catch (err) {
-        alert("⚠ Smart Clock not connected");
-      }
-    }
-
-    async function sendCommand(command) {
-      if (!command) return;
-      if (!txCharacteristic) {
-        await connectToESP32();
-        if (!txCharacteristic) return;
-      }
-      try {
-        let encoder = new TextEncoder();
-        await txCharacteristic.writeValue(encoder.encode(command));
-        alert("📤 Command sent: " + command);
-      } catch (err) {
-        alert("⚠ Failed to send command");
-      }
-    }
-
-    // Speech Recognition
-    if (SpeechRecognition) {
-      recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        isRecording = true;
-        recordingIndicator.classList.remove('hidden');
-      };
-
-      recognition.onend = () => {
-        isRecording = false;
-        recordingIndicator.classList.add('hidden');
-      };
-
-      recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(r => r[0].transcript)
-          .join('');
-        voiceText.textContent = transcript;
-        voiceResult.classList.remove('hidden');
-      };
-    } else {
-      recordBtn.disabled = true;
-      recordBtn.innerHTML = 'Voice Not Supported';
-    }
-
-    // UI handlers
-    recordBtn.addEventListener('click', () => {
-      recordSection.classList.remove('hidden');
-      typeSection.classList.add('hidden');
-      if (isRecording) recognition.stop();
-      else {
-        voiceResult.classList.add('hidden');
-        recognition.start();
-      }
+async function connectToESP32() {
+  try {
+    bluetoothDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ name: "BluScreen Smart Display" }],
+      optionalServices: [SERVICE_UUID]
     });
+    gattServer = await bluetoothDevice.gatt.connect();
+    clockService = await gattServer.getPrimaryService(SERVICE_UUID);
+    txCharacteristic = await clockService.getCharacteristic(CHAR_UUID);
+    status.textContent = "Status: Connected ✅";
+  } catch (err) {
+    status.textContent = "Status: Not connected ❌";
+    console.log(err);
+  }
+}
 
-    typeBtn.addEventListener('click', () => {
-      typeSection.classList.remove('hidden');
-      recordSection.classList.add('hidden');
-      if (isRecording) recognition.stop();
-    });
+async function sendCommand(cmd) {
+  if (!txCharacteristic) {
+    await connectToESP32();
+    if (!txCharacteristic) return;
+  }
+  let encoder = new TextEncoder();
+  await txCharacteristic.writeValue(encoder.encode(cmd));
+  console.log("Command sent: " + cmd);
+}
 
-    sendVoiceBtn.addEventListener('click', () => sendCommand(voiceText.textContent.trim()));
-    sendTextBtn.addEventListener('click', () => sendCommand(typeInput.value.trim()));
-  </script>
+// --- Text commands ---
+sendTextBtn.addEventListener('click', () => {
+  const cmd = typeInput.value.trim();
+  if (cmd) sendCommand(cmd);
+});
+
+// --- Voice commands ---
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition, isRecording = false;
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onstart = () => { isRecording = true; voiceResult.classList.add('hidden'); };
+  recognition.onend = () => { isRecording = false; };
+  recognition.onresult = (event) => {
+    const transcript = Array.from(event.results).map(r => r[0].transcript).join('');
+    voiceText.textContent = transcript;
+    voiceResult.classList.remove('hidden');
+  };
+} else {
+  recordBtn.disabled = true;
+  recordBtn.textContent = "Voice Not Supported";
+}
+
+recordBtn.addEventListener('click', () => {
+  if (!recognition) return;
+  if (isRecording) recognition.stop();
+  else recognition.start();
+});
+
+sendVoiceBtn.addEventListener('click', () => {
+  const cmd = voiceText.textContent.trim();
+  if (cmd) sendCommand(cmd);
+});
+
+connectBtn.addEventListener('click', connectToESP32);
+</script>
 </body>
 </html>
-
-
-
